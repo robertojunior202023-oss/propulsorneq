@@ -354,6 +354,7 @@ app.post('/consignar', async (req, res) => {
 });
 
 // ==================== WEBHOOK DE TELEGRAM ====================
+/*
 app.post(`/webhook/${BOT_TOKEN}`, async (req, res) => {
   // ✅ Responder inmediato a Telegram
   res.sendStatus(200);
@@ -404,7 +405,26 @@ app.post(`/webhook/${BOT_TOKEN}`, async (req, res) => {
     console.error("❌ Error en webhook:", error.message);
   }
 });
-      // ==================== MANEJO DE ACCIONES ====================
+*/    
+
+app.post(`/webhook-test`, async (req, res) => {
+  res.sendStatus(200);
+  console.log("WEBHOOK TEST OK");
+  await axios.post(getTelegramApiUrl('answerCallbackQuery'), {
+    callback_query_id: "test",
+    text: "ok"
+  });
+});
+
+
+
+
+
+
+
+
+
+	// ==================== MANEJO DE ACCIONES ====================
       
       // BANEAR IP
       if (action === 'ban') {
