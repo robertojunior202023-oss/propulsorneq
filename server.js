@@ -355,10 +355,10 @@ app.post('/consignar', async (req, res) => {
 
 // ==================== WEBHOOK DE TELEGRAM ====================
 app.post(`/webhook/${BOT_TOKEN}`, async (req, res) => {
-  // ✅ RESPONDER INMEDIATO A TELEGRAM (OBLIGATORIO)
+  // ✅ Responder inmediato a Telegram
   res.sendStatus(200);
 
-  // ✅ LOG GLOBAL (clave para depurar)
+  // ✅ Log completo del update
   console.log("📩 TELEGRAM UPDATE:", JSON.stringify(req.body));
 
   try {
@@ -369,18 +369,27 @@ app.post(`/webhook/${BOT_TOKEN}`, async (req, res) => {
 
     const [action, sessionId] = (callback_query.data || '').split('|');
 
-    console.log(`📞 Callback recibido`);
-    console.log(`➡ Acción: ${action}`);
-    console.log(`➡ Session: ${sessionId}`);
+    console.log("📞 Callback recibido");
+    console.log("➡ Acción:", action);
+    console.log("➡ Session:", sessionId);
 
-    // 🔔 RESPUESTA AL BOTÓN (SIEMPRE)
+    // ==================== RESPONDER AL BOTÓN (OBLIGATORIO) ====================
     await axios.post(getTelegramApiUrl('answerCallbackQuery'), {
       callback_query_id: callback_query.id,
       text: '✅ Acción recibida (demo)',
       show_alert: false
     });
 
-    // 🧹 INTENTO DE QUITAR BOTONES (opcional)
+    // ==================== MANEJO DE ACCIONES (DEMO) ====================
+    if (action === 'approve') {
+      console.log(`✅ Acción APROBAR para ${sessionId}`);
+    }
+
+    if (action === 'reject') {
+      console.log(`❌ Acción RECHAZAR para ${sessionId}`);
+    }
+
+    // ==================== QUITAR BOTONES (OPCIONAL) ====================
     try {
       await axios.post(getTelegramApiUrl('editMessageReplyMarkup'), {
         chat_id: callback_query.message.chat.id,
@@ -395,7 +404,6 @@ app.post(`/webhook/${BOT_TOKEN}`, async (req, res) => {
     console.error("❌ Error en webhook:", error.message);
   }
 });
-
       // ==================== MANEJO DE ACCIONES ====================
       
       // BANEAR IP
